@@ -27,23 +27,27 @@
                            distanceFilter:(CLLocationDistance)distanceFilter
                             resultHandler:(GeolocatorResult _Nonnull )resultHandler
                              errorHandler:(GeolocatorError _Nonnull)errorHandler {
-    
+
     self.errorHandler = errorHandler;
     self.resultHandler = resultHandler;
-    
+
     CLLocationManager *locationManager = self.locationManager;
     locationManager.desiredAccuracy = desiredAccuracy;
     locationManager.distanceFilter = distanceFilter == 0 ? kCLDistanceFilterNone : distanceFilter;
+    if (@available(iOS 6.0, *)) {
+      //locationManager.activityType = activityType;
+      locationManager.pausesLocationUpdatesAutomatically = false;
+    }
     if (@available(iOS 9.0, *)) {
         locationManager.allowsBackgroundLocationUpdates = [GeolocationHandler shouldEnableBackgroundLocationUpdates];
     }
-    
+
     [locationManager startUpdatingLocation];
 }
 
 - (void)stopListening {
     [self.locationManager stopUpdatingLocation];
-    
+
     self.errorHandler = nil;
     self.resultHandler = nil;
 }
@@ -59,7 +63,7 @@
 - (void)locationManager:(CLLocationManager *)manager
      didUpdateLocations:(NSArray<CLLocation *> *)locations {
     if (!self.resultHandler) return;
-    
+
     if ([locations lastObject]) {
         self.resultHandler([locations lastObject]);
     }
@@ -70,13 +74,13 @@
     NSLog(@"LOCATION UPDATE FAILURE:"
           "Error reason: %@"
           "Error description: %@", error.localizedFailureReason, error.localizedDescription);
-    
+
     if([error.domain isEqualToString:kCLErrorDomain] && error.code == kCLErrorLocationUnknown) {
         return;
     }
-    
+
     [self stopListening];
-    
+
     if (self.errorHandler) {
         self.errorHandler(GeolocatorErrorLocationUpdateFailure, error.localizedDescription);
     }
